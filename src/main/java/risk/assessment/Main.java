@@ -13,6 +13,21 @@ public class Main {
         System.out.print("Enter boat size: ");
         int boatSize = scanner.nextInt();
 
-        safety.initialRating(experience, boatSize);
+        System.out.print("Enter wind direction: ");
+        int windDirection = scanner.nextInt();
+
+        System.out.print("Enter wind speed: ");
+        int windSpeed = scanner.nextInt();
+
+        System.out.print("Enter air temp: ");
+        int airTemp = scanner.nextInt();
+
+        int initialScore = safety.initialRating(experience, boatSize);
+        int windScore = safety.windRating(windDirection, windSpeed);
+        int airScore = safety.airTemp(airTemp);
+
+        int finalScore = initialScore + windScore + airScore;
+
+        System.out.println(finalScore);
     }
 }
