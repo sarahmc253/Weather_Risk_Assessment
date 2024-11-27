@@ -13,17 +13,15 @@ public class Main {
         System.out.print("Enter boat size: ");
         int boatSize = scanner.nextInt();
 
-        System.out.print("Enter wind direction: ");
-        int windDirection = scanner.nextInt();
-
-        System.out.print("Enter wind speed: ");
-        int windSpeed = scanner.nextInt();
+        double[] windDetails = safety.fetchingWindData();
+        int windSpeed = (int) windDetails[0];
+        int windDirection = (int) windDetails[1];
 
         System.out.print("Enter air temp: ");
         int airTemp = scanner.nextInt();
 
         int initialScore = safety.initialRating(experience, boatSize);
-        int windScore = safety.windRating(windDirection, windSpeed);
+        int windScore = safety.windRating(windSpeed, windDirection);
         int airScore = safety.airTemp(airTemp);
 
         int finalScore = initialScore + windScore + airScore;

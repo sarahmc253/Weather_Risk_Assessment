@@ -1,5 +1,11 @@
 package risk.assessment;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class Safety {
 
     public int initialRating(int experience, int boatSize) {
@@ -18,18 +24,72 @@ public class Safety {
         score += switch(boatSize) {
             case 1 -> 4;
             case 2 -> 3;
-            case 3 -> 2;
-            case 4 -> 1;
+            case 4 -> 2;
+            case 8 -> 1;
             default -> 0;
         };
 
         return score;
     }
 
-    public int windRating(int windDirection, int windSpeed) {
+    public double[] fetchingWindData(){
+        String url = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=52.668018&lon=-8.630498"; // Replace with your location's latitude/longitude
+        String targetTime = "2024-11-27T17:00:00Z"; // Replace with your desired time (ISO 8601 format)
+        double windSpeed = 0;
+        double windDirection = 0;
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .header("User-Agent", "Weather_Risk_Assessment (24403067@studentmail.ul.ie)") // Replace with your details
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new RuntimeException("Request failed: " + response.code());
+            }
+
+            // Parse the JSON response
+            String responseBody = response.body().string();
+            JSONObject json = new JSONObject(responseBody);
+
+            // Navigate to the timeseries array
+            JSONArray timeseries = json.getJSONObject("properties").getJSONArray("timeseries");
+
+            // Search for the specific time
+            boolean found = false;
+            for (int i = 0; i < timeseries.length(); i++) {
+                JSONObject dataPoint = timeseries.getJSONObject(i);
+                String time = dataPoint.getString("time");
+
+                if (time.equals(targetTime)) {
+                    // Extract wind details
+                    JSONObject details = dataPoint.getJSONObject("data").getJSONObject("instant").getJSONObject("details");
+                    windSpeed = details.getDouble("wind_speed");
+                    windDirection = details.getDouble("wind_from_direction");
+
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                throw new IllegalArgumentException("No data available for specified time");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        double[] windDetails = {windSpeed, windDirection};
+
+        return windDetails;
+    }
+
+    public int windRating(int windSpeed, int windDirection) {
         int windScore = 0;
 
-        if (windDirection == 1) {
+        if (windDirection >= 225 && windDirection <= 315) {
             windScore += switch (windSpeed) { // westerly winds
                 case 0, 1, 2, 3 -> 1;
                 case 4 -> 8;
@@ -39,7 +99,7 @@ public class Safety {
                 default -> 25;
             };
         }
-        else if (windDirection == 2) { // easterly winds
+        else if (windDirection >= 45 && windDirection <= 135) { // easterly winds
             windScore += switch (windSpeed) {
                 case 0, 1, 2, 3 -> 1;
                 case 4 -> 8;
@@ -49,7 +109,7 @@ public class Safety {
                 default -> 20;
             };
         }
-        else if (windDirection == 3) { // other directions
+        else if (windDirection >= 0 &&  windDirection < 360) { // other directions
             windScore += switch(windSpeed) {
                 case 0, 1, 2, 3 -> 0;
                 case 4 -> 2;
@@ -60,7 +120,7 @@ public class Safety {
             };
         }
         else {
-            throw new IllegalArgumentException("Wind direction must be a value of 1, 2, 3");
+            throw new IllegalArgumentException("Wind direction is invalid");
         }
 
         return windScore;
@@ -99,8 +159,6 @@ public class Safety {
         }
         else if (temperature > 0 && temperature <= 5) {
             airScore += 1;
-        }
-        else {
         }
 
         return airScore;
