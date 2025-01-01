@@ -1,4 +1,4 @@
-package risk.assessment;
+package main.java.risk.assessment;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -32,11 +32,11 @@ public class Safety {
         return score;
     }
 
-    public double[] fetchingWindData(){
-        String url = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=52.668018&lon=-8.630498"; // Replace with your location's latitude/longitude
-        String targetTime = "2024-11-27T17:00:00Z"; // Replace with your desired time (ISO 8601 format)
+    public double[] fetchingWeatherData(String targetTime){
+        String url = "https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=52.668018&lon=-8.630498";
         double windSpeed = 0;
         double windDirection = 0;
+        double airTemp = 0;
 
         OkHttpClient client = new OkHttpClient();
 
@@ -50,14 +50,12 @@ public class Safety {
                 throw new RuntimeException("Request failed: " + response.code());
             }
 
-            // Parse the JSON response
             String responseBody = response.body().string();
             JSONObject json = new JSONObject(responseBody);
 
-            // Navigate to the timeseries array
             JSONArray timeseries = json.getJSONObject("properties").getJSONArray("timeseries");
 
-            // Search for the specific time
+
             boolean found = false;
             for (int i = 0; i < timeseries.length(); i++) {
                 JSONObject dataPoint = timeseries.getJSONObject(i);
@@ -68,6 +66,7 @@ public class Safety {
                     JSONObject details = dataPoint.getJSONObject("data").getJSONObject("instant").getJSONObject("details");
                     windSpeed = details.getDouble("wind_speed");
                     windDirection = details.getDouble("wind_from_direction");
+                    airTemp = details.getDouble("air_temperature");
 
                     found = true;
                     break;
@@ -81,9 +80,9 @@ public class Safety {
             e.printStackTrace();
         }
 
-        double[] windDetails = {windSpeed, windDirection};
+        double[] weatherDetails = {windSpeed, windDirection, airTemp};
 
-        return windDetails;
+        return weatherDetails;
     }
 
     public int windRating(int windSpeed, int windDirection) {
